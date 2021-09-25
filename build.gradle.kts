@@ -10,6 +10,10 @@ repositories {
 }
 
 dependencies {
+
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.ow2.asm:asm:9.2")
+
+    testImplementation(kotlin("test-junit"))
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.4")
 }

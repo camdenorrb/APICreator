@@ -15,32 +15,30 @@ object Main {
 			"Usage: java -jar ApiCreator.jar (PathToJarOrClass)"
 		}
 
-		val inputFile = Path.of(args[0]).toAbsolutePath()
+		val inputPath = Path.of(args[0]).toAbsolutePath()
 
-		check(inputFile.exists()) {
-			"Could not find jar file for path: '${inputFile.pathString}'"
+		check(inputPath.exists()) {
+			"Could not find jar file for path: '${inputPath.pathString}'"
 		}
-		check(inputFile.extension.equals("jar", true) || inputFile.extension.equals("class", true)) {
+		check(inputPath.extension.equals("jar", true) || inputPath.extension.equals("class", true)) {
 			"The jar file path provided isn't a .jar nor .class file"
 		}
 
-		val outputFile = inputFile.parent.resolve("API-${inputFile.name}")
-		outputFile.deleteIfExists()
+		val outputPath = inputPath.parent.resolve("API-${inputPath.name}")
+		outputPath.deleteIfExists()
 
-		if (outputFile.extension.equals("jar", true)) {
-			cleanUpJar(inputFile, outputFile)
+		if (outputPath.extension.equals("jar", true)) {
+			cleanUpJar(inputPath, outputPath)
 		}
 		else {
-			cleanUpClass(inputFile, outputFile)
+			outputPath.writeBytes(cleanUpClass(inputPath), StandardOpenOption.CREATE)
 		}
 	}
 
 	fun cleanUpJar(inputJar: Path, outputJar: Path) {
 
-		val outputJarFileSystem =
-			FileSystems.newFileSystem(URI.create("jar:file:${outputJar.pathString}"), mapOf("create" to true))
-		val inputJarFileSystem =
-			FileSystems.newFileSystem(URI.create("jar:file:${inputJar.pathString}"), mapOf("create" to true))
+		val outputJarFileSystem = FileSystems.newFileSystem(URI.create("jar:file:${outputJar.pathString}"), mapOf("create" to true))
+		val inputJarFileSystem = FileSystems.newFileSystem(URI.create("jar:file:${inputJar.pathString}"), mapOf("create" to true))
 
 		Files.walk(inputJarFileSystem.rootDirectories.first()).filter { it.isRegularFile() }.forEach {
 
@@ -48,7 +46,7 @@ object Main {
 			outputPath.parent?.createDirectories()
 
 			if (it.extension == "class") {
-				cleanUpClass(it, outputPath)
+				outputPath.writeBytes(cleanUpClass(it), StandardOpenOption.CREATE)
 			} else {
 				it.copyTo(outputPath)
 			}
@@ -58,14 +56,15 @@ object Main {
 		inputJarFileSystem.close()
 	}
 
-	fun cleanUpClass(inputClazz: Path, outputClazz: Path) {
+
+	fun cleanUpClass(inputClazz: Path): ByteArray {
 
 		val classReader = ClassReader(inputClazz.inputStream())
 		val classWriter = ClassWriter(0)
 
 		classReader.accept(APIClassVisitor(Opcodes.ASM9, classWriter), 0)
 
-		outputClazz.writeBytes(classWriter.toByteArray(), StandardOpenOption.CREATE)
+		return classWriter.toByteArray()
 	}
 
 
