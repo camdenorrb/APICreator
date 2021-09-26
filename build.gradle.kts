@@ -12,7 +12,8 @@ repositories {
 dependencies {
 
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.ow2.asm:asm:9.2")
+    //implementation("org.ow2.asm:asm:9.2")
+    implementation("com.guardsquare:proguard-core:8.0.1")
 
     testImplementation(kotlin("test-junit"))
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.4")

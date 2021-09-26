@@ -3,6 +3,8 @@ package dev.twelveoclock.apicreator
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
+import org.jetbrains.kotlin.load.kotlin.KotlinClassFinder
+import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.copyTo

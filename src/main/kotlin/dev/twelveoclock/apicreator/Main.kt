@@ -35,6 +35,11 @@ object Main {
 		}
 	}
 
+
+}
+
+/*
+
 	fun cleanUpJar(inputJar: Path, outputJar: Path) {
 
 		val outputJarFileSystem = FileSystems.newFileSystem(URI.create("jar:file:${outputJar.pathString}"), mapOf("create" to true))
@@ -140,5 +145,4 @@ object Main {
 		}
 
 	}
-
-}
+ */
