@@ -1,8 +1,16 @@
 package dev.twelveoclock.apicreator
 
-import org.objectweb.asm.*
+import proguard.classfile.Clazz
+import proguard.classfile.ProgramClass
+import proguard.classfile.ProgramField
+import proguard.classfile.visitor.ClassVisitor
+import proguard.classfile.visitor.MemberVisitor
+import proguard.io.ClassReader
+import proguard.io.StreamingDataEntry
 import java.net.URI
-import java.nio.file.*
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.io.path.*
 
 // TODO: Abstract and add a proguard-core variant to speedtest/compare
@@ -30,12 +38,40 @@ object Main {
 		if (outputPath.extension.equals("jar", true)) {
 			cleanUpJar(inputPath, outputPath)
 		}
-		else {
+		/*else {
 			outputPath.writeBytes(cleanUpClass(inputPath), StandardOpenOption.CREATE)
-		}
+		}*/
 	}
 
 
+	fun cleanUpJar(inputJar: Path, outputJar: Path) {
+
+		val outputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${outputJar.pathString}"), mapOf("create" to true))
+		val inputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${inputJar.pathString}"), mapOf("create" to true))
+
+
+		Files.walk(inputJarFS.rootDirectories.first()).filter { it.extension == "class" }.forEach {
+
+			// Look at ClassReader's main method for more examples
+			ClassReader(false, false, false, true, null, APIClassOutputBuilder)
+				.read(StreamingDataEntry(it.nameWithoutExtension, it.inputStream()))
+		}
+
+	}
+
+	object APIClassOutputBuilder : ClassVisitor, MemberVisitor {
+
+		override fun visitAnyClass(clazz: Clazz) {
+			clazz.methodsAccept(this)
+			TODO("Not yet implemented")
+		}
+
+		override fun visitProgramField(programClass: ProgramClass, programField: ProgramField) {
+			programClass.getConstant(programField.u2nameIndex)
+			super.visitProgramField(programClass, programField)
+		}
+
+	}
 }
 
 /*
