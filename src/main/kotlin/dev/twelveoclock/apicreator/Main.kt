@@ -1,184 +1,145 @@
 package dev.twelveoclock.apicreator
 
-import proguard.classfile.Clazz
-import proguard.classfile.ProgramClass
-import proguard.classfile.ProgramField
-import proguard.classfile.visitor.ClassVisitor
-import proguard.classfile.visitor.MemberVisitor
-import proguard.io.ClassReader
-import proguard.io.StreamingDataEntry
-import java.net.URI
-import java.nio.file.FileSystems
-import java.nio.file.Files
+import dev.twelveoclock.apicreator.cleaner.ASMOW2Cleaner
+import dev.twelveoclock.apicreator.cleaner.ProGuardCleaner
+import dev.twelveoclock.apicreator.cleaner.base.Cleaner
+import kotlinx.cli.*
 import java.nio.file.Path
+import java.util.*
 import kotlin.io.path.*
+import kotlin.system.measureTimeMillis
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
+
 
 // TODO: Abstract and add a proguard-core variant to speedtest/compare
 object Main {
 
+	@OptIn(ExperimentalTime::class)
 	@JvmStatic
 	fun main(args: Array<String>) {
 
-		check(args.size == 1) {
-			"Usage: java -jar ApiCreator.jar (PathToJarOrClass)"
-		}
+		val (inputPath, outputPath, cleanerSelection, options) = parseArgs(args)
 
-		val inputPath = Path.of(args[0]).toAbsolutePath()
+		println(
+			"""
+			Running with {
+				Input path: $inputPath
+				Output path: $outputPath
+				Cleaner: $cleanerSelection
+				Options: $options
+			}
+			
+			""".trimIndent()
+		)
 
-		check(inputPath.exists()) {
-			"Could not find jar file for path: '${inputPath.pathString}'"
-		}
-		check(inputPath.extension.equals("jar", true) || inputPath.extension.equals("class", true)) {
-			"The jar file path provided isn't a .jar nor .class file"
-		}
-
-		val outputPath = inputPath.parent.resolve("API-${inputPath.name}")
+		// Delete the provided output if exists, overwrite
 		outputPath.deleteIfExists()
 
-		if (outputPath.extension.equals("jar", true)) {
-			cleanUpJar(inputPath, outputPath)
-		}
-		/*else {
-			outputPath.writeBytes(cleanUpClass(inputPath), StandardOpenOption.CREATE)
-		}*/
-	}
-
-
-	fun cleanUpJar(inputJar: Path, outputJar: Path) {
-
-		val outputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${outputJar.pathString}"), mapOf("create" to true))
-		val inputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${inputJar.pathString}"), mapOf("create" to true))
-
-
-		Files.walk(inputJarFS.rootDirectories.first()).filter { it.extension == "class" }.forEach {
-
-			// Look at ClassReader's main method for more examples
-			ClassReader(false, false, false, true, null, APIClassOutputBuilder)
-				.read(StreamingDataEntry(it.nameWithoutExtension, it.inputStream()))
-		}
-
-	}
-
-	object APIClassOutputBuilder : ClassVisitor, MemberVisitor {
-
-		override fun visitAnyClass(clazz: Clazz) {
-			clazz.methodsAccept(this)
-			TODO("Not yet implemented")
-		}
-
-		override fun visitProgramField(programClass: ProgramClass, programField: ProgramField) {
-			programClass.getConstant(programField.u2nameIndex)
-			super.visitProgramField(programClass, programField)
-		}
-
-	}
-}
-
-/*
-
-	fun cleanUpJar(inputJar: Path, outputJar: Path) {
-
-		val outputJarFileSystem = FileSystems.newFileSystem(URI.create("jar:file:${outputJar.pathString}"), mapOf("create" to true))
-		val inputJarFileSystem = FileSystems.newFileSystem(URI.create("jar:file:${inputJar.pathString}"), mapOf("create" to true))
-
-		Files.walk(inputJarFileSystem.rootDirectories.first()).filter { it.isRegularFile() }.forEach {
-
-			val outputPath = outputJarFileSystem.getPath(it.pathString)
-			outputPath.parent?.createDirectories()
-
-			if (it.extension == "class") {
-				outputPath.writeBytes(cleanUpClass(it), StandardOpenOption.CREATE)
+		val time = measureTime {
+			if (outputPath.extension.equals("jar", true)) {
+				when (cleanerSelection) {
+					CleanerSelection.ASM_OW2 -> ASMOW2Cleaner.cleanUpJar(inputPath, outputPath, options)
+					CleanerSelection.PROGUARD -> ProGuardCleaner.cleanUpJar(inputPath, outputPath, options)
+				}
 			} else {
-				it.copyTo(outputPath)
+				when (cleanerSelection) {
+					CleanerSelection.ASM_OW2 -> ASMOW2Cleaner.cleanUpClass(inputPath, outputPath, options)
+					CleanerSelection.PROGUARD -> ProGuardCleaner.cleanUpClass(inputPath, outputPath, options)
+				}
 			}
 		}
 
-		outputJarFileSystem.close()
-		inputJarFileSystem.close()
+		println("Completed $outputPath, took ${time.inWholeMilliseconds}ms")
 	}
 
 
-	fun cleanUpClass(inputClazz: Path): ByteArray {
+	// TODO: Parse options
+	/**
+	 * Parses the options from the program arguments
+	 *
+	 * @param args Array<String>, The arguments used to run the program
+	 * @return Args, Parsed arguments
+	 */
+	fun parseArgs(args: Array<String>): ParsedArgs {
 
-		val classReader = ClassReader(inputClazz.inputStream())
-		val classWriter = ClassWriter(0)
+		/* Parsing */
 
-		classReader.accept(APIClassVisitor(Opcodes.ASM9, classWriter), 0)
+		val argsParser = ArgParser("APICreator")
 
-		return classWriter.toByteArray()
+		val input by argsParser.option(
+			ArgType.String,
+			shortName = "i",
+			description = "Input .jar or .class file"
+		).required()
+
+		val output by argsParser.option(
+			ArgType.String,
+			shortName = "o",
+			description = "Output file path (Default: API-{inputFileName})"
+		)
+
+		val overwrite by argsParser.option(
+			ArgType.Boolean,
+			fullName = "overwrite",
+			description = "Whether or not to overwrite the output if it already exists"
+		).default(false)
+
+		val cleanerSelection by argsParser.option(
+			ArgType.Choice<CleanerSelection>(),
+			"cleaner",
+			"c",
+			"The cleaner library to use"
+		).default(CleanerSelection.PROGUARD)
+
+		val options by argsParser.option(
+			ArgType.Choice<Cleaner.Option>(),
+			description = "The cleaner options to use"
+		).multiple()
+
+		argsParser.parse(args)
+
+		/* Verifying */
+
+		val inputPath = Path(input)
+		val outputPath = Path(output ?: "API-${Path(input).name}")
+
+		check(inputPath.exists()) {
+			"Could not find input file for path: '${inputPath.pathString}'"
+		}
+
+		check(inputPath.extension.equals("jar", true) || inputPath.extension.equals("class", true)) {
+			"The input file path provided isn't a .jar nor .class file"
+		}
+
+		if (outputPath.exists() && !overwrite) {
+			error("You must use the `--overwrite` option if the output file already exists!")
+		}
+
+		return ParsedArgs(inputPath, outputPath, cleanerSelection, options.toSet())
 	}
 
+	/**
+	 *
+	 * @property inputPath Path, The path to the input file
+	 * @property outputPath Path
+	 * @property selection CleanerSelection
+	 * @property options EnumSet<Option>
+	 * @constructor
+	 */
+	data class ParsedArgs(
+		val inputPath: Path,
+		val outputPath: Path,
+		val selection: CleanerSelection,
+		val options: Set<Cleaner.Option>
+	)
 
-	class APIClassVisitor(api: Int, classWriter: ClassWriter) : ClassVisitor(api, classWriter) {
-
-		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor {
-
-			if (descriptor == "Lkotlin/Metadata;") {
-				return APIAnnotationVisitor(api, super.visitAnnotation(descriptor, visible))
-			}
-
-			return super.visitAnnotation(descriptor, visible)
-		}
-
-		override fun visitField(
-			access: Int,
-			name: String?,
-			descriptor: String?,
-			signature: String?,
-			value: Any?
-		): FieldVisitor? {
-
-			// Write if the method is public or protected + abstract
-			// TODO: Determine whether to keep protected members based on class visibility
-
-			if (
-				access and Opcodes.ACC_PUBLIC != 0 ||
-				access and Opcodes.ACC_PROTECTED != 0
-			) {
-				return super.visitField(access, name, descriptor, signature, value)
-			}
-
-			return null
-		}
-
-		override fun visitMethod(
-			access: Int,
-			name: String,
-			descriptor: String,
-			signature: String?,
-			exceptions: Array<String>?,
-		): MethodVisitor? {
-
-			// Write if the method is public or protected + abstract
-			// TODO: Determine whether to keep protected members based on class visibility
-			if (
-				access and Opcodes.ACC_PUBLIC != 0 ||
-				access and Opcodes.ACC_PROTECTED != 0
-			) {
-				super.visitMethod(access, name, descriptor, signature, exceptions)
-			}
-
-			return null
-		}
-
+	/**
+	 * The types of cleaners to choose from
+	 */
+	enum class CleanerSelection {
+		ASM_OW2,
+		PROGUARD,
 	}
 
-	class APIAnnotationVisitor(api: Int, visitor: AnnotationVisitor) : AnnotationVisitor(api, visitor) {
-
-		override fun visitArray(name: String): AnnotationVisitor {
-			return APIAnnotationArrayVisitor(api, name, super.visitArray(name))
-		}
-
-	}
-
-	class APIAnnotationArrayVisitor(api: Int, val name: String, visitor: AnnotationVisitor) : AnnotationVisitor(api, visitor) {
-
-		private var removeTypeNext = false
-
-		override fun visit(name: String?, value: Any) {
-			println("${this.name} $value")
-			super.visit(name, value)
-		}
-
-	}
- */
+}
