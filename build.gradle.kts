@@ -1,5 +1,7 @@
 plugins {
+    application
     kotlin("jvm") version "1.5.31"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 group = "dev.twelveoclock"
@@ -11,10 +13,19 @@ repositories {
 
 dependencies {
 
+    // Kotlin
     implementation(kotlin("stdlib-jdk8"))
-    //implementation("org.ow2.asm:asm:9.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.3")
+
+    // Transformers
+    implementation("org.ow2.asm:asm:9.2")
     implementation("com.guardsquare:proguard-core:8.0.1")
 
+    // Testing
     testImplementation(kotlin("test-junit"))
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.4")
+}
+
+application {
+    mainClass.set("dev.twelveoclock.apicreator.Main")
 }
