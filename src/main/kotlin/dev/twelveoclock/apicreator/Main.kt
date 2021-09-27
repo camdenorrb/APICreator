@@ -5,9 +5,7 @@ import dev.twelveoclock.apicreator.cleaner.ProGuardCleaner
 import dev.twelveoclock.apicreator.cleaner.base.Cleaner
 import kotlinx.cli.*
 import java.nio.file.Path
-import java.util.*
 import kotlin.io.path.*
-import kotlin.system.measureTimeMillis
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -36,21 +34,21 @@ object Main {
 		// Delete the provided output if exists, overwrite
 		outputPath.deleteIfExists()
 
+		val cleaner = when (cleanerSelection) {
+			CleanerSelection.ASM_OW2 -> ASMOW2Cleaner
+			CleanerSelection.PROGUARD -> ProGuardCleaner
+		}
+
 		val time = measureTime {
 			if (outputPath.extension.equals("jar", true)) {
-				when (cleanerSelection) {
-					CleanerSelection.ASM_OW2 -> ASMOW2Cleaner.cleanUpJar(inputPath, outputPath, options)
-					CleanerSelection.PROGUARD -> ProGuardCleaner.cleanUpJar(inputPath, outputPath, options)
-				}
-			} else {
-				when (cleanerSelection) {
-					CleanerSelection.ASM_OW2 -> ASMOW2Cleaner.cleanUpClass(inputPath, outputPath, options)
-					CleanerSelection.PROGUARD -> ProGuardCleaner.cleanUpClass(inputPath, outputPath, options)
-				}
+				cleaner.cleanUpJar(inputPath, outputPath, options)
+			}
+			else {
+				cleaner.cleanUpClass(inputPath, outputPath, options)
 			}
 		}
 
-		println("Completed $outputPath, took ${time.inWholeMilliseconds}ms")
+		println("Completed: $outputPath, Took: ${time.inWholeMilliseconds}ms, Output Size: ${outputPath.fileSize()} bytes")
 	}
 
 
