@@ -10,7 +10,6 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 
-// TODO: Abstract and add a proguard-core variant to speedtest/compare
 object Main {
 
 	@OptIn(ExperimentalTime::class)
@@ -52,7 +51,6 @@ object Main {
 	}
 
 
-	// TODO: Parse options
 	/**
 	 * Parses the options from the program arguments
 	 *
@@ -120,9 +118,9 @@ object Main {
 	/**
 	 *
 	 * @property inputPath Path, The path to the input file
-	 * @property outputPath Path
-	 * @property selection CleanerSelection
-	 * @property options EnumSet<Option>
+	 * @property outputPath Path, The path to the output file
+	 * @property selection CleanerSelection, The cleaner to use
+	 * @property options EnumSet<Option>, The options to clean with
 	 * @constructor
 	 */
 	data class ParsedArgs(
