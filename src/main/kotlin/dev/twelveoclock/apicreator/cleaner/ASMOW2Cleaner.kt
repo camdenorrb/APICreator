@@ -17,18 +17,18 @@ object ASMOW2Cleaner : Cleaner {
 		val classReader = ClassReader(inputPath.inputStream())
 		val classWriter = ClassWriter(0)
 
-		classReader.accept(APIClassVisitor(Opcodes.ASM9, classWriter), 0)
+		classReader.accept(APIClassVisitor(Opcodes.ASM9, classWriter, options), 0)
 
 		outputPath.writeBytes(classWriter.toByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
 	}
 
 
-	class APIClassVisitor(api: Int, classWriter: ClassWriter) : ClassVisitor(api, classWriter) {
+	class APIClassVisitor(api: Int, classWriter: ClassWriter, val options: Set<Cleaner.Option>) : ClassVisitor(api, classWriter) {
 
 		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
 
 			// Remove Kotlin metadata
-			if (descriptor == "Lkotlin/Metadata;") {
+			if (Cleaner.Option.STRIP_KOTLIN_HEADERS in options && descriptor == "Lkotlin/Metadata;") {
 				return null
 				//return APIAnnotationVisitor(api, super.visitAnnotation(descriptor, visible))
 			}
@@ -47,7 +47,6 @@ object ASMOW2Cleaner : Cleaner {
 
 			// Write if the method is public or protected + abstract
 			// TODO: Determine whether to keep protected members based on class visibility
-
 			if (access and Opcodes.ACC_PRIVATE != 0) {
 				return null
 			}

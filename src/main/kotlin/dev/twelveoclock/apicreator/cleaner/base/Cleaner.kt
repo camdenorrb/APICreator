@@ -63,7 +63,8 @@ interface Cleaner {
 	 * Cleaner options
 	 */
 	enum class Option {
-		REMOVE_NON_CLASS_FILES
+		REMOVE_NON_CLASS_FILES,
+		STRIP_KOTLIN_HEADERS,
 	}
 
 }
