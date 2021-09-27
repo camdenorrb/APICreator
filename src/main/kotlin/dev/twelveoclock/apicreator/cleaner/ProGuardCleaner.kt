@@ -2,15 +2,12 @@ package dev.twelveoclock.apicreator.cleaner
 
 import dev.twelveoclock.apicreator.cleaner.base.Cleaner
 import proguard.classfile.AccessConstants
-import proguard.classfile.Clazz
 import proguard.classfile.ProgramClass
 import proguard.classfile.attribute.Attribute
-import proguard.classfile.attribute.visitor.AttributeVisitor
 import proguard.classfile.editor.AttributesEditor
 import proguard.classfile.editor.ClassEditor
 import proguard.classfile.io.ProgramClassReader
 import proguard.classfile.io.ProgramClassWriter
-import proguard.classfile.visitor.ClassVisitor
 import proguard.classfile.visitor.MultiClassVisitor
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -26,10 +23,34 @@ object ProGuardCleaner : Cleaner {
 
 	override fun cleanUpClass(inputPath: Path, outputPath: Path, options: Set<Cleaner.Option>) {
 		DataOutputStream(outputPath.outputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)).use { dataOutputStream ->
-			programClass(inputPath).accept(
+
+			val programClass = programClass(inputPath)
+
+			val classEditor = ClassEditor(programClass)
+			//val classAttributeEditor = AttributesEditor(programClass, true)
+
+			// Remove fields that are private
+			programClass.fields.reversed().forEach { field ->
+				if (field.accessFlags and AccessConstants.PRIVATE != 0) {
+					classEditor.removeField(field)
+				}
+			}
+
+			// Remove methods that are private and the code otherwise
+			programClass.methods.reversed().forEach { method ->
+				if (method.accessFlags and AccessConstants.PRIVATE != 0) {
+					classEditor.removeMethod(method)
+				}
+				else {
+					AttributesEditor(programClass, method, true).deleteAttribute(Attribute.CODE)
+				}
+			}
+
+
+			programClass.accept(
 				MultiClassVisitor(
 					/*KotlinMetadataInitializer(WarningPrinter(PrintWriter(System.err))),*/
-					APIVisitor(),
+					/*APIVisitor(),*/
 					ProgramClassWriter(dataOutputStream)
 				)
 			)
@@ -43,6 +64,7 @@ object ProGuardCleaner : Cleaner {
 	}
 
 
+	/*
 	class APIVisitor : ClassVisitor, AttributeVisitor {
 
 		lateinit var classEditor: ClassEditor
@@ -79,5 +101,6 @@ object ProGuardCleaner : Cleaner {
 			//programClass.kotlinMetadataAccept(this)
 		}
 	}
+	*/
 
 }
