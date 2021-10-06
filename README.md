@@ -25,6 +25,5 @@ Turns into
 ```kotlin
 fun doAThing() {}
 ```
-in the api stub
 
 
