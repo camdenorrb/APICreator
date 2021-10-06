@@ -1,5 +1,5 @@
 # APICreator
-Make API stubs from compiled jars!
+Remove the logic from your compiled code so people can build off it and not know the logic behind it
 
 ### Example Usage
 `java -jar APICreator.jar -i path/to/jarOrClass`
@@ -14,3 +14,17 @@ Make API stubs from compiled jars!
 --options [REMOVE_NON_CLASS_FILES, STRIP_KOTLIN_HEADERS] -> The cleaner options to use { Value should be one of [remove_non_class_files, strip_kotlin_headers] }
 --help, -h -> Usage info 
 ```
+
+### Example
+```kotlin
+fun doAThing() { 
+    println("I do this thing")
+}
+```
+Turns into
+```kotlin
+fun doAThing() {}
+```
+in the api stub
+
+
