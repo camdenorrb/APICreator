@@ -33,4 +33,4 @@ private fun doAThing() {
     println("I do this thing")
 }
 ```
-gets deleted
+Gets deleted since it's private
