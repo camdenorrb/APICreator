@@ -1,5 +1,5 @@
 # APICreator
-Remove the logic from your compiled code so people can build off it and not know the logic behind it
+Remove the logic from your compiled code so people can build off it without the worry of them stealing your code
 
 ### Example Usage
 `java -jar APICreator.jar -i path/to/jarOrClass`
