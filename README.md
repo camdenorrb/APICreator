@@ -15,7 +15,7 @@ Remove the logic from your compiled code so people can build off it without the 
 --help, -h -> Usage info 
 ```
 
-### Examples
+### Example 1
 ```kotlin
 fun doAThing() { 
     println("I do this thing")
@@ -25,6 +25,8 @@ Turns into
 ```kotlin
 fun doAThing() {}
 ```
+
+### Example 2
 
 ```kotlin
 private fun doAThing() { 
