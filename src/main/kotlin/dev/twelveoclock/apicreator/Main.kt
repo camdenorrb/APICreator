@@ -86,7 +86,7 @@ object Main {
 			"cleaner",
 			"c",
 			"The cleaner library to use"
-		).default(CleanerSelection.PROGUARD)
+		).default(CleanerSelection.ASM_OW2)
 
 		val options by argsParser.option(
 			ArgType.Choice<Cleaner.Option>(),
