@@ -16,6 +16,7 @@ import java.nio.file.StandardOpenOption
 import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream
 
+// TODO: Add support for removing kotlin headers
 object ProGuardCleaner : Cleaner {
 
 	override val name = "Proguard"

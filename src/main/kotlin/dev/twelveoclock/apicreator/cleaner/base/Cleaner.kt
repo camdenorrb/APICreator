@@ -64,7 +64,7 @@ interface Cleaner {
 	 */
 	enum class Option {
 		KEEP_NON_CLASS_FILES,
-		STRIP_KOTLIN_HEADERS,
+		KEEP_KOTLIN_HEADERS,
 	}
 
 }

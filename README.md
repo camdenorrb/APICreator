@@ -11,7 +11,7 @@ Remove the logic from your compiled code so people can build off it without the 
 --output, -o -> Output file path (Default: API-{inputFileName}) { String }
 --overwrite [false] -> Whether or not to overwrite the output if it already exists 
 --cleaner, -c [PROGUARD] -> The cleaner library to use { Value should be one of [asm_ow2, proguard] }
---options [KEEP_NON_CLASS_FILES, STRIP_KOTLIN_HEADERS] -> The cleaner options to use { Value should be one of [keep_non_class_files, strip_kotlin_headers] }
+--options [KEEP_NON_CLASS_FILES, KEEP_KOTLIN_HEADERS] -> The cleaner options to use { Value should be one of [keep_non_class_files, keep_kotlin_headers] }
 --help, -h -> Usage info 
 ```
 

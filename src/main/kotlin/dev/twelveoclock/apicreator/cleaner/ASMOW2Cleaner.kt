@@ -28,7 +28,7 @@ object ASMOW2Cleaner : Cleaner {
 		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
 
 			// Remove Kotlin metadata
-			if (Cleaner.Option.STRIP_KOTLIN_HEADERS in options && descriptor == "Lkotlin/Metadata;") {
+			if (Cleaner.Option.KEEP_KOTLIN_HEADERS !in options && descriptor == "Lkotlin/Metadata;") {
 				return null
 				//return APIAnnotationVisitor(api, super.visitAnnotation(descriptor, visible))
 			}
