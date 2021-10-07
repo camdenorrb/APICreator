@@ -91,7 +91,7 @@ object Main {
 		val options by argsParser.option(
 			ArgType.Choice<Cleaner.Option>(),
 			description = "The cleaner options to use"
-		).multiple().default(setOf(Cleaner.Option.REMOVE_NON_CLASS_FILES, Cleaner.Option.STRIP_KOTLIN_HEADERS))
+		).multiple().default(setOf(Cleaner.Option.KEEP_NON_CLASS_FILES, Cleaner.Option.STRIP_KOTLIN_HEADERS))
 
 		argsParser.parse(args)
 

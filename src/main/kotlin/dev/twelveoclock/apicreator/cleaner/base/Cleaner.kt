@@ -49,7 +49,7 @@ interface Cleaner {
 			if (it.extension == "class") {
 				cleanUpClass(it, outputClassPath, options)
 			}
-			else if (Option.REMOVE_NON_CLASS_FILES !in options){
+			else if (Option.KEEP_NON_CLASS_FILES in options){
 				it.copyTo(outputClassPath)
 			}
 		}
@@ -63,7 +63,7 @@ interface Cleaner {
 	 * Cleaner options
 	 */
 	enum class Option {
-		REMOVE_NON_CLASS_FILES,
+		KEEP_NON_CLASS_FILES,
 		STRIP_KOTLIN_HEADERS,
 	}
 
