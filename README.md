@@ -25,7 +25,7 @@ Turns into
 ```kotlin
 fun doAThing() {}
 ```
-
+---
 ### Example 2
 
 ```kotlin
