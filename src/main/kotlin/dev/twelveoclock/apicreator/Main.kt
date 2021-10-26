@@ -91,7 +91,7 @@ object Main {
 		val options by argsParser.option(
 			ArgType.Choice<Cleaner.Option>(),
 			description = "The cleaner options to use"
-		).multiple().default(emptySet())
+		).multiple()
 
 		argsParser.parse(args)
 
