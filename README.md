@@ -1,5 +1,6 @@
 # APICreator
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build Status](https://drone.12oclock.dev/api/badges/camdenorrb/APICreator/status.svg)](https://drone.12oclock.dev/camdenorrb/APICreator)
 
 Remove the logic from your compiled code so people can build off it without the worry of them stealing your code
