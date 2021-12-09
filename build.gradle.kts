@@ -1,7 +1,7 @@
 plugins {
     application
-    kotlin("jvm") version "1.5.31"
-    id("com.github.johnrengelman.shadow") version "7.0.0"
+    kotlin("jvm") version "1.6.0"
+    id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
 group = "dev.twelveoclock"
@@ -23,7 +23,7 @@ dependencies {
 
     // Testing
     testImplementation(kotlin("test-junit"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.5")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.6")
 }
 
 application {
