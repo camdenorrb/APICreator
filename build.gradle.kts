@@ -19,7 +19,7 @@ dependencies {
 
     // Transformers
     implementation("org.ow2.asm:asm:9.3")
-    implementation("com.guardsquare:proguard-core:9.0.0")
+    implementation("com.guardsquare:proguard-core:9.0.1")
 
     // Testing
     testImplementation(kotlin("test-junit"))
