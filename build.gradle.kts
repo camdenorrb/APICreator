@@ -23,7 +23,7 @@ dependencies {
 
     // Testing
     testImplementation(kotlin("test-junit"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.8")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.9")
 }
 
 application {
