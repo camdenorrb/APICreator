@@ -54,7 +54,7 @@ class CompileTests {
 		val compiledInputClass = compiled1.outputDirectory.toPath().resolve("KClass.class")
 		val compiledExpectedClass = compiled2.outputDirectory.toPath().resolve("KClass.class")
 
-		compiledExpectedClass.copyTo(Path.of(compiledExpectedClass.name))
+		compiledExpectedClass.copyTo(Path.of(compiledExpectedClass.name), true)
 	}
 
 }
