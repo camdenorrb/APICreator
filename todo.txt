@@ -1,1 +1,0 @@
-Remove kotlin sources from the project
