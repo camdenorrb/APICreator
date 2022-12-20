@@ -1,11 +1,16 @@
 package dev.twelveoclock.apicreator.cleaner
 
 import dev.twelveoclock.apicreator.cleaner.base.Cleaner
+import kotlinx.metadata.Flag
+import kotlinx.metadata.internal.metadata.deserialization.Flags.IS_INLINE
+import kotlinx.metadata.jvm.KotlinClassHeader
+import kotlinx.metadata.jvm.KotlinClassMetadata
 import org.objectweb.asm.*
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.inputStream
 import kotlin.io.path.writeBytes
+import kotlin.jvm.internal.Intrinsics.Kotlin
 
 object ASMOW2Cleaner : Cleaner {
 
@@ -19,7 +24,11 @@ object ASMOW2Cleaner : Cleaner {
 
 		classReader.accept(APIClassVisitor(Opcodes.ASM9, classWriter, options), 0)
 
-		outputPath.writeBytes(classWriter.toByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+		outputPath.writeBytes(
+			classWriter.toByteArray(),
+			StandardOpenOption.CREATE,
+			StandardOpenOption.TRUNCATE_EXISTING
+		)
 	}
 
 
@@ -27,10 +36,14 @@ object ASMOW2Cleaner : Cleaner {
 
 		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
 
-			// Remove Kotlin metadata
-			if (Cleaner.Option.KEEP_KOTLIN_HEADERS !in options && descriptor == "Lkotlin/Metadata;") {
-				return null
-				//return APIAnnotationVisitor(api, super.visitAnnotation(descriptor, visible))
+			if (descriptor == "Lkotlin/Metadata;") {
+
+				// Remove Kotlin metadata
+				if (Cleaner.Option.REMOVE_KOTLIN_HEADERS in options) {
+					return null
+				}
+
+				return APIKotlinMetadataVisitor(api, options, super.visitAnnotation(descriptor, visible))
 			}
 
 			return super.visitAnnotation(descriptor, visible)
@@ -47,7 +60,8 @@ object ASMOW2Cleaner : Cleaner {
 
 			// Write if the method is public or protected + abstract
 			// TODO: Determine whether to keep protected members based on class visibility
-			if (access and Opcodes.ACC_PRIVATE != 0) {
+
+			if (Cleaner.Option.KEEP_PRIVATE !in options && access and Opcodes.ACC_PRIVATE != 0) {
 				return null
 			}
 
@@ -64,16 +78,17 @@ object ASMOW2Cleaner : Cleaner {
 
 			// Write if the method is public or protected + abstract
 			// TODO: Determine whether to keep protected members based on class visibility
-			if (access and Opcodes.ACC_PRIVATE != 0) {
+			if (Cleaner.Option.KEEP_PRIVATE !in options && access and Opcodes.ACC_PRIVATE != 0) {
 				return null
 			}
 
-			return APIMethodVisitor(api, super.visitMethod(access, name, descriptor, signature, exceptions))
+			//return super.visitMethod(access, name, descriptor, signature, exceptions)
+			return APIMethodVisitor(api, super.visitMethod(access, name, descriptor, signature, exceptions), options)
 		}
 
 	}
 
-	class APIMethodVisitor(api: Int, visitor: MethodVisitor) : MethodVisitor(api, visitor) {
+	class APIMethodVisitor(api: Int, visitor: MethodVisitor, val options: Set<Cleaner.Option>) : MethodVisitor(api, visitor) {
 
 		override fun visitParameter(name: String?, access: Int) {}
 
@@ -82,6 +97,7 @@ object ASMOW2Cleaner : Cleaner {
 		override fun visitAttribute(attribute: Attribute?) {}
 
 		override fun visitCode() {}
+
 
 		override fun visitFrame(
 			type: Int,
@@ -152,18 +168,29 @@ object ASMOW2Cleaner : Cleaner {
 			index: Int,
 		) {}
 
-		override fun visitLineNumber(line: Int, start: Label?) {}
+		override fun visitLineNumber(line: Int, start: Label?) {
+			return super.visitLineNumber(line, start)
+		}
 
-		override fun visitMaxs(maxStack: Int, maxLocals: Int) {}
+		override fun visitMaxs(maxStack: Int, maxLocals: Int) {
+			return super.visitMaxs(maxStack, maxLocals)
+		}
 
-		override fun visitEnd() {}
+		override fun visitEnd() {
+			return super.visitEnd()
+		}
 
 		override fun visitAnnotationDefault(): AnnotationVisitor? {
+
+			if (Cleaner.Option.REMOVE_ANNOTATION_DEFAULTS !in options) {
+				return super.visitAnnotationDefault()
+			}
+
 			return null
 		}
 
 		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
-			return null
+			return super.visitAnnotation(descriptor, visible)
 		}
 
 		override fun visitTypeAnnotation(
@@ -172,7 +199,7 @@ object ASMOW2Cleaner : Cleaner {
 			descriptor: String?,
 			visible: Boolean,
 		): AnnotationVisitor? {
-			return null
+			return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible)
 		}
 
 		override fun visitParameterAnnotation(
@@ -180,7 +207,7 @@ object ASMOW2Cleaner : Cleaner {
 			descriptor: String?,
 			visible: Boolean,
 		): AnnotationVisitor? {
-			return null
+			return super.visitParameterAnnotation(parameter, descriptor, visible)
 		}
 
 		override fun visitTryCatchAnnotation(
@@ -201,29 +228,137 @@ object ASMOW2Cleaner : Cleaner {
 			descriptor: String?,
 			visible: Boolean,
 		): AnnotationVisitor? {
-			return null
+			return super.visitLocalVariableAnnotation(typeRef, typePath, start, end, index, descriptor, visible)
 		}
 	}
 
-	/*
-	class APIAnnotationVisitor(api: Int, visitor: AnnotationVisitor) : AnnotationVisitor(api, visitor) {
 
-		override fun visitArray(name: String): AnnotationVisitor? {
-			return null
-			//return APIAnnotationArrayVisitor(api, name, super.visitArray(name))
+	class APIKotlinMetadataVisitor(api: Int, val options: Set<Cleaner.Option>, val writer: AnnotationVisitor) : AnnotationVisitor(api) {
+
+		var metaDataVersion: IntArray? = null
+			private set
+
+		var kind: Int? = null
+
+		var extraInt: Int? = null
+			private set
+
+		var data1: MutableList<String>? = null
+
+		var data2: MutableList<String>? = null
+
+		var extraString: String? = null
+			private set
+
+		// This was deprecated out
+		//var byteCodeVersion: IntArray? = null
+		//	private set
+
+		var packageName: String? = null
+			private set
+
+
+		override fun visit(name: String, value: Any) {
+			when(name) {
+				"mv" -> metaDataVersion = value as IntArray
+				"k" -> kind = value as Int
+				"xi" -> extraInt = value as Int
+				"xs" -> extraString = value as String
+				"pn" -> packageName = value as String
+				"bv" -> {/*NOOP*/} //byteCodeVersion = value as IntArray
+				else -> throw IllegalStateException("Unknown value $name")
+			}
 		}
 
-	}
-
-	class APIAnnotationArrayVisitor(api: Int, val name: String, visitor: AnnotationVisitor) : AnnotationVisitor(api, visitor) {
-
-		private var removeTypeNext = false
-
-		override fun visit(name: String?, value: Any) {
-			//println("${this.name} $value")
-			super.visit(name, value)
+		override fun visitAnnotation(name: String?, descriptor: String?): AnnotationVisitor {
+			error("Should never get here")
 		}
 
+		override fun visitEnum(name: String?, descriptor: String?, value: String?) {
+			error("Should never get here")
+		}
+
+		override fun visitArray(name: String): AnnotationVisitor {
+			return when (name) {
+				"d1" -> {
+					if (data1 == null) {
+						data1 = mutableListOf()
+					}
+					ArrayVisitor(api, name, data1!!)
+				}
+
+				"d2" -> {
+					if (data2 == null) {
+						data2 = mutableListOf()
+					}
+					ArrayVisitor(api, name, data2!!)
+				}
+
+				else -> throw IllegalStateException("Unknown name $name")
+			}
+		}
+
+		override fun visitEnd() {
+
+			// https://github.com/JetBrains/kotlin/blob/master/libraries/kotlinx-metadata/jvm/ReadMe.md
+			val header = KotlinClassHeader(kind, metaDataVersion, data1?.toTypedArray(), data2?.toTypedArray(), extraString, packageName, extraInt)
+
+			if (Cleaner.Option.KEEP_KOTLIN_INLINE_METADATA in options) {
+				writeKotlinMeta(header)
+				return
+			}
+
+			val meta = KotlinClassMetadata.read(header)
+
+			when (meta) {
+				is KotlinClassMetadata.Class -> {
+					val kmClass = meta.toKmClass()
+					kmClass.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
+					writeKotlinMeta(KotlinClassMetadata.Class.Writer().apply(kmClass::accept).write().header)
+				}
+				is KotlinClassMetadata.FileFacade -> {
+					val kmPackage = meta.toKmPackage()
+					kmPackage.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
+					writeKotlinMeta(KotlinClassMetadata.FileFacade.Writer().apply(kmPackage::accept).write().header)
+				}
+				else -> writeKotlinMeta(meta!!.header) // TODO: Support other types
+			}
+		}
+
+		private fun writeKotlinMeta(header: KotlinClassHeader) {
+
+			header.metadataVersion.takeIf { it.isNotEmpty() }?.let { writer.visit("mv", it) }
+			writer.visit("k", header.kind)
+			header.extraInt.takeIf { it != 0 }?.let { writer.visit("xi", it) }
+			//header.extraInt.takeIf { it != 0 }?.let { writer.visit("xi", it) } // For some reason header seems to lack the extra int
+			//byteCodeVersion?.let { writer.visit("bv", it) }
+
+			if (header.data1.isNotEmpty()) {
+				writer.visitArray("d1").apply {
+					header.data1.forEach { visit(null, it) }
+					visitEnd()
+				}
+			}
+
+			if (header.data2.isNotEmpty()) {
+				writer.visitArray("d2").apply {
+					header.data2.forEach { visit(null, it) }
+					visitEnd()
+				}
+			}
+			header.extraString.takeIf { it.isNotBlank() }?.let { writer.visit("xs", it) }
+			header.packageName.takeIf { it.isNotBlank() }?.let { writer.visit("pn", it) }
+
+			writer.visitEnd()
+		}
+
+		class ArrayVisitor(api: Int, val name: String, val output: MutableList<String>) : AnnotationVisitor(api) {
+
+			override fun visit(nullName: String?, value: Any) {
+				output.add(value as String)
+			}
+
+		}
 	}
-	*/
+
 }

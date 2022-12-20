@@ -1,6 +1,7 @@
 package dev.twelveoclock.apicreator
 
 import dev.twelveoclock.apicreator.cleaner.ASMOW2Cleaner
+import dev.twelveoclock.apicreator.cleaner.NOOPASMOW2Cleaner
 import dev.twelveoclock.apicreator.cleaner.ProGuardCleaner
 import dev.twelveoclock.apicreator.cleaner.base.Cleaner
 import kotlinx.cli.*
@@ -34,6 +35,7 @@ object Main {
 		outputPath.deleteIfExists()
 
 		val cleaner = when (cleanerSelection) {
+			CleanerSelection.NOOP_ASM_OW2 -> NOOPASMOW2Cleaner
 			CleanerSelection.ASM_OW2 -> ASMOW2Cleaner
 			CleanerSelection.PROGUARD -> ProGuardCleaner
 		}
@@ -134,6 +136,7 @@ object Main {
 	 * The types of cleaners to choose from
 	 */
 	enum class CleanerSelection {
+		NOOP_ASM_OW2,
 		ASM_OW2,
 		PROGUARD,
 	}

@@ -47,6 +47,7 @@ object ProGuardCleaner : Cleaner {
 				}
 			}
 
+
 			programClass.accept(
 				MultiClassVisitor(
 					/*KotlinMetadataInitializer(WarningPrinter(PrintWriter(System.err))),*/

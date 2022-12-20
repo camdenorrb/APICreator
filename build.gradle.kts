@@ -20,6 +20,9 @@ dependencies {
     // Transformers
     implementation("org.ow2.asm:asm:9.4")
     implementation("com.guardsquare:proguard-core:9.0.6")
+    implementation("net.bytebuddy:byte-buddy:1.12.20")
+    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0")
+
 
     // Testing
     testImplementation(kotlin("test-junit"))
