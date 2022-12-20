@@ -32,14 +32,17 @@ object ASMOW2Cleaner : Cleaner {
 	}
 
 
-	class APIClassVisitor(api: Int, classWriter: ClassWriter, val options: Set<Cleaner.Option>) :
-		ClassVisitor(api, classWriter) {
+	class APIClassVisitor(api: Int, classWriter: ClassWriter, val options: Set<Cleaner.Option>) : ClassVisitor(api, classWriter) {
 
 		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
 
-			// Remove Kotlin metadata
-			if (/*Cleaner.Option.KEEP_KOTLIN_HEADERS !in options && */descriptor == "Lkotlin/Metadata;") {
-				//return null
+			if (descriptor == "Lkotlin/Metadata;") {
+
+				// Remove Kotlin metadata
+				if (Cleaner.Option.REMOVE_KOTLIN_HEADERS in options) {
+					return null
+				}
+
 				return APIKotlinMetadataVisitor(api, options, super.visitAnnotation(descriptor, visible))
 			}
 
@@ -57,11 +60,11 @@ object ASMOW2Cleaner : Cleaner {
 
 			// Write if the method is public or protected + abstract
 			// TODO: Determine whether to keep protected members based on class visibility
-			/*
+
 			if (Cleaner.Option.KEEP_PRIVATE !in options && access and Opcodes.ACC_PRIVATE != 0) {
 				return null
 			}
-			*/
+
 			return super.visitField(access, name, descriptor, signature, value)
 		}
 
@@ -75,10 +78,9 @@ object ASMOW2Cleaner : Cleaner {
 
 			// Write if the method is public or protected + abstract
 			// TODO: Determine whether to keep protected members based on class visibility
-			/*
 			if (Cleaner.Option.KEEP_PRIVATE !in options && access and Opcodes.ACC_PRIVATE != 0) {
 				return null
-			}*/
+			}
 
 			//return super.visitMethod(access, name, descriptor, signature, exceptions)
 			return APIMethodVisitor(api, super.visitMethod(access, name, descriptor, signature, exceptions), options)
@@ -86,8 +88,7 @@ object ASMOW2Cleaner : Cleaner {
 
 	}
 
-	class APIMethodVisitor(api: Int, visitor: MethodVisitor, val options: Set<Cleaner.Option>) :
-		MethodVisitor(api, visitor) {
+	class APIMethodVisitor(api: Int, visitor: MethodVisitor, val options: Set<Cleaner.Option>) : MethodVisitor(api, visitor) {
 
 		override fun visitParameter(name: String?, access: Int) {}
 
@@ -242,9 +243,9 @@ object ASMOW2Cleaner : Cleaner {
 		var extraInt: Int? = null
 			private set
 
-		var data1: MutableList<String>? = null//mutableListOf<String>()
+		var data1: MutableList<String>? = null
 
-		var data2: MutableList<String>? = null//= mutableListOf<String>()
+		var data2: MutableList<String>? = null
 
 		var extraString: String? = null
 			private set
@@ -264,7 +265,7 @@ object ASMOW2Cleaner : Cleaner {
 				"xi" -> extraInt = value as Int
 				"xs" -> extraString = value as String
 				"pn" -> packageName = value as String
-				"bv" -> {/*NOOP*/}//byteCodeVersion = value as IntArray
+				"bv" -> {/*NOOP*/} //byteCodeVersion = value as IntArray
 				else -> throw IllegalStateException("Unknown value $name")
 			}
 		}
@@ -278,32 +279,19 @@ object ASMOW2Cleaner : Cleaner {
 		}
 
 		override fun visitArray(name: String): AnnotationVisitor {
-
-
-			// https://github.com/JetBrains/kotlin/blob/master/libraries/kotlinx-metadata/jvm/ReadMe.md
-
-			//if (Cleaner.Option.REMOVE_KOTLIN_INLINE_METADATA in options) {
-				//KotlinClassMetadata.read(KotlinClassHeader())
-			//val kmClass = KmClass().apply {
-
-			//}
-			//val header = KotlinClassMetadata.Class.Writer().apply(kmClass::accept).write().header
-			//}
-
-
 			return when (name) {
 				"d1" -> {
 					if (data1 == null) {
 						data1 = mutableListOf()
 					}
-					APIAnnotationArrayVisitor(api, name, data1!!)
+					ArrayVisitor(api, name, data1!!)
 				}
 
 				"d2" -> {
 					if (data2 == null) {
 						data2 = mutableListOf()
 					}
-					APIAnnotationArrayVisitor(api, name, data2!!)
+					ArrayVisitor(api, name, data2!!)
 				}
 
 				else -> throw IllegalStateException("Unknown name $name")
@@ -312,25 +300,28 @@ object ASMOW2Cleaner : Cleaner {
 
 		override fun visitEnd() {
 
+			// https://github.com/JetBrains/kotlin/blob/master/libraries/kotlinx-metadata/jvm/ReadMe.md
 			val header = KotlinClassHeader(kind, metaDataVersion, data1?.toTypedArray(), data2?.toTypedArray(), extraString, packageName, extraInt)
+
+			if (Cleaner.Option.KEEP_KOTLIN_INLINE_METADATA in options) {
+				writeKotlinMeta(header)
+				return
+			}
+
 			val meta = KotlinClassMetadata.read(header)
 
 			when (meta) {
 				is KotlinClassMetadata.Class -> {
 					val kmClass = meta.toKmClass()
-					kmClass.functions.filter { Flag.Function.IS_INLINE(it.flags)}.forEach { it.flags = IS_INLINE.invert(it.flags) }
+					kmClass.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
 					writeKotlinMeta(KotlinClassMetadata.Class.Writer().apply(kmClass::accept).write().header)
 				}
 				is KotlinClassMetadata.FileFacade -> {
 					val kmPackage = meta.toKmPackage()
-					kmPackage.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach {
-						it.flags = IS_INLINE.invert(it.flags)
-					}
+					kmPackage.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
 					writeKotlinMeta(KotlinClassMetadata.FileFacade.Writer().apply(kmPackage::accept).write().header)
 				}
-				else -> {
-					writeKotlinMeta(meta!!.header)
-				} // TODO: Support other types
+				else -> writeKotlinMeta(meta!!.header) // TODO: Support other types
 			}
 		}
 
@@ -361,114 +352,13 @@ object ASMOW2Cleaner : Cleaner {
 			writer.visitEnd()
 		}
 
-	}
+		class ArrayVisitor(api: Int, val name: String, val output: MutableList<String>) : AnnotationVisitor(api) {
 
-	class APIAnnotationArrayVisitor(api: Int, val name: String, val output: MutableList<String>) : AnnotationVisitor(api) {
+			override fun visit(nullName: String?, value: Any) {
+				output.add(value as String)
+			}
 
-		override fun visit(nullName: String?, value: Any) {
-			output.add(value as String)
 		}
-
 	}
 
 }
-
-/*
-	class APIClassWriter : ClassWriter(0) {
-
-
-		override fun hasFlags(flags: Int): Boolean {
-			return super.hasFlags(flags)
-		}
-
-		override fun toByteArray(): ByteArray {
-			return super.toByteArray()
-		}
-
-		override fun newConst(value: Any?): Int {
-			return super.newConst(value)
-		}
-
-		override fun newUTF8(value: String?): Int {
-			println(value)
-			return super.newUTF8(value)
-		}
-
-		override fun newClass(value: String?): Int {
-			println(value)
-			return super.newClass(value)
-		}
-
-		override fun newMethodType(methodDescriptor: String?): Int {
-			println(methodDescriptor)
-			return super.newMethodType(methodDescriptor)
-		}
-
-		override fun newModule(moduleName: String?): Int {
-			return super.newModule(moduleName)
-		}
-
-		override fun newPackage(packageName: String?): Int {
-			return super.newPackage(packageName)
-		}
-
-		override fun newHandle(tag: Int, owner: String?, name: String?, descriptor: String?): Int {
-			return super.newHandle(tag, owner, name, descriptor)
-		}
-
-		override fun newHandle(
-			tag: Int,
-			owner: String?,
-			name: String?,
-			descriptor: String?,
-			isInterface: Boolean
-		): Int {
-			println(name)
-			return super.newHandle(tag, owner, name, descriptor, isInterface)
-		}
-
-		override fun newConstantDynamic(
-			name: String?,
-			descriptor: String?,
-			bootstrapMethodHandle: Handle?,
-			vararg bootstrapMethodArguments: Any?,
-		): Int {
-			println(name)
-			return super.newConstantDynamic(name, descriptor, bootstrapMethodHandle, *bootstrapMethodArguments)
-		}
-
-		override fun newInvokeDynamic(
-			name: String?,
-			descriptor: String?,
-			bootstrapMethodHandle: Handle?,
-			vararg bootstrapMethodArguments: Any?,
-		): Int {
-			println(name)
-			return super.newInvokeDynamic(name, descriptor, bootstrapMethodHandle, *bootstrapMethodArguments)
-		}
-
-		override fun newField(owner: String?, name: String?, descriptor: String?): Int {
-			println(name)
-			return super.newField(owner, name, descriptor)
-		}
-
-		override fun newMethod(owner: String?, name: String?, descriptor: String?, isInterface: Boolean): Int {
-			println(name)
-			return super.newMethod(owner, name, descriptor, isInterface)
-		}
-
-		override fun newNameType(name: String?, descriptor: String?): Int {
-			println(name)
-			return super.newNameType(name, descriptor)
-		}
-
-		override fun getCommonSuperClass(type1: String?, type2: String?): String {
-			println(type1)
-			return super.getCommonSuperClass(type1, type2)
-		}
-
-		override fun getClassLoader(): ClassLoader {
-			return super.getClassLoader()
-		}
-	}
-}*/

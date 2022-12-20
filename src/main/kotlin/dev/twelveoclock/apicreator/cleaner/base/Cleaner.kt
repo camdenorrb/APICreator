@@ -1,7 +1,5 @@
 package dev.twelveoclock.apicreator.cleaner.base
 
-import kotlinx.metadata.jvm.KotlinModuleMetadata
-import java.io.File
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -38,12 +36,26 @@ interface Cleaner {
 		val outputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${outputPath.absolute().pathString}"), mapOf("create" to true))
 		val inputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${inputPath.absolute().pathString}"), mapOf("create" to true))
 
-		Files.walk(inputJarFS.rootDirectories.first()).filter { it.isRegularFile() }.forEach {
+		val rootDir = inputJarFS.rootDirectories.first()
+		val kotlinDir = rootDir.resolve("kotlin")
+
+		Files.walk(rootDir).filter { it != kotlinDir }.filter { it.isRegularFile() }.forEach {
 			/*
 			if (it.name == "module-info.class") {
 				return@forEach
 			}
 			*/
+
+			//region Remove Kotlin things
+			if (it.nameWithoutExtension.startsWith("kotlin-stdlib") && it.extension == "kotlin_module") {
+				return@forEach
+			}
+
+			if (it.startsWith(kotlinDir)) {
+				return@forEach
+			}
+
+			//endregion
 
 			val outputClassPath = outputJarFS.getPath(it.pathString).apply {
 				parent?.createDirectories()
@@ -66,9 +78,9 @@ interface Cleaner {
 	 * Cleaner options
 	 */
 	enum class Option {
-		KEEP_KOTLIN_HEADERS,
+		KEEP_KOTLIN_INLINE_METADATA,
 		KEEP_PRIVATE,
-		REMOVE_KOTLIN_INLINE_METADATA,
+		REMOVE_KOTLIN_HEADERS,
 		REMOVE_ANNOTATION_DEFAULTS,
 		REMOVE_NON_CLASS_FILES,
 	}

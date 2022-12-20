@@ -9,7 +9,7 @@ import kotlin.io.path.writeBytes
 
 object NOOPASMOW2Cleaner : Cleaner {
 
-	override val name = "NOOPASM"
+	override val name = "NOOP_ASM"
 
 
 	override fun cleanUpClass(inputPath: Path, outputPath: Path, options: Set<Cleaner.Option>) {

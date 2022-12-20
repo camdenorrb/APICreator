@@ -5,8 +5,6 @@ import dev.twelveoclock.apicreator.cleaner.NOOPASMOW2Cleaner
 import dev.twelveoclock.apicreator.cleaner.ProGuardCleaner
 import dev.twelveoclock.apicreator.cleaner.base.Cleaner
 import kotlinx.cli.*
-import kotlinx.metadata.jvm.KotlinModuleMetadata
-import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.*
 import kotlin.time.ExperimentalTime
