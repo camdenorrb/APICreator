@@ -1,5 +1,7 @@
 package dev.twelveoclock.apicreator.cleaner.base
 
+import kotlinx.metadata.jvm.KotlinModuleMetadata
+import java.io.File
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -37,10 +39,11 @@ interface Cleaner {
 		val inputJarFS = FileSystems.newFileSystem(URI.create("jar:file:${inputPath.absolute().pathString}"), mapOf("create" to true))
 
 		Files.walk(inputJarFS.rootDirectories.first()).filter { it.isRegularFile() }.forEach {
-
+			/*
 			if (it.name == "module-info.class") {
 				return@forEach
 			}
+			*/
 
 			val outputClassPath = outputJarFS.getPath(it.pathString).apply {
 				parent?.createDirectories()
@@ -49,7 +52,7 @@ interface Cleaner {
 			if (it.extension == "class") {
 				cleanUpClass(it, outputClassPath, options)
 			}
-			else if (Option.KEEP_NON_CLASS_FILES in options){
+			else if (Option.REMOVE_NON_CLASS_FILES !in options){
 				it.copyTo(outputClassPath)
 			}
 		}
@@ -63,8 +66,11 @@ interface Cleaner {
 	 * Cleaner options
 	 */
 	enum class Option {
-		KEEP_NON_CLASS_FILES,
 		KEEP_KOTLIN_HEADERS,
+		KEEP_PRIVATE,
+		REMOVE_KOTLIN_INLINE_METADATA,
+		REMOVE_ANNOTATION_DEFAULTS,
+		REMOVE_NON_CLASS_FILES,
 	}
 
 }
