@@ -10,7 +10,6 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.inputStream
 import kotlin.io.path.writeBytes
-import kotlin.jvm.internal.Intrinsics.Kotlin
 
 object ASMOW2Cleaner : Cleaner {
 
@@ -318,21 +317,22 @@ object ASMOW2Cleaner : Cleaner {
 				is KotlinClassMetadata.Class -> {
 					val kmClass = meta.toKmClass()
 					kmClass.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
-					writeKotlinMeta(KotlinClassMetadata.Class.Writer().apply(kmClass::accept).write().header)
+					writeKotlinMeta(KotlinClassMetadata.writeClass(kmClass).annotationData)
 				}
 				is KotlinClassMetadata.FileFacade -> {
 					val kmPackage = meta.toKmPackage()
 					kmPackage.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
-					writeKotlinMeta(KotlinClassMetadata.FileFacade.Writer().apply(kmPackage::accept).write().header)
+					writeKotlinMeta(KotlinClassMetadata.writeFileFacade(kmPackage).annotationData)
 				}
-				else -> writeKotlinMeta(meta!!.header) // TODO: Support other types
+				else -> writeKotlinMeta(meta!!.annotationData) // TODO: Support other types
 			}
 		}
 
-		private fun writeKotlinMeta(header: KotlinClassHeader) {
+		private fun writeKotlinMeta(header: Metadata) {
 
 			header.metadataVersion.takeIf { it.isNotEmpty() }?.let { writer.visit("mv", it) }
 			writer.visit("k", header.kind)
+			@Suppress("KotlinConstantConditions")
 			header.extraInt.takeIf { it != 0 }?.let { writer.visit("xi", it) }
 			//header.extraInt.takeIf { it != 0 }?.let { writer.visit("xi", it) } // For some reason header seems to lack the extra int
 			//byteCodeVersion?.let { writer.visit("bv", it) }

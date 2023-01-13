@@ -21,7 +21,7 @@ dependencies {
     implementation("org.ow2.asm:asm:9.4")
     implementation("com.guardsquare:proguard-core:9.0.7")
     implementation("net.bytebuddy:byte-buddy:1.12.22")
-    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.0")
 
 
     // Testing
