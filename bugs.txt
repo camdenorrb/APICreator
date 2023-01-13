@@ -1,0 +1,16 @@
+[18:56:45 ERROR]: [RelLifesteal] failed to init plugin
+java.lang.UnsupportedOperationException: This function has a reified type parameter and thus can only be inlined at compilation time, not called directly.
+        at kotlin.jvm.internal.Intrinsics.throwUndefinedForReified(Intrinsics.java:207) ~[relcore-plugin.jar:?]
+        at kotlin.jvm.internal.Intrinsics.throwUndefinedForReified(Intrinsics.java:201) ~[relcore-plugin.jar:?]
+        at kotlin.jvm.internal.Intrinsics.reifiedOperationMarker(Intrinsics.java:211) ~[relcore-plugin.jar:?]
+        at com.sxtanna.mc.relcore.inject.RelCoreInjector.get$default(RelCoreInjector.kt:54) ~[relcore-plugin.jar:?]
+        at com.sxtanna.mc.rellifesteal.RelLifestealPlugin.init(RelLifestealPlugin.kt:40) ~[rellifesteal-0.1.0-SNAPSHOT.jar:?]
+        at com.sxtanna.mc.relcore.plugin.spigot.RelCorePluginSpigot.onLoad(RelCorePluginSpigot.kt:28) ~[relcore-plugin.jar:?]
+        at org.bukkit.craftbukkit.v1_19_R1.CraftServer.loadPlugins(CraftServer.java:475) ~[purpur-1.19.2.jar:git-Purpur-1825]
+        at net.minecraft.server.dedicated.DedicatedServer.initServer(DedicatedServer.java:314) ~[purpur-1.19.2.jar:git-Purpur-1825]
+        at net.minecraft.server.MinecraftServer.runServer(MinecraftServer.java:1116) ~[purpur-1.19.2.jar:git-Purpur-1825]
+        at net.minecraft.server.MinecraftServer.lambda$spin$1(MinecraftServer.java:310) ~[purpur-1.19.2.jar:git-Purpur-1825]
+        at java.lang.Thread.run(Thread.java:1589) ~[?:?]
+
+Solution:
+Ignore inline functions somehow

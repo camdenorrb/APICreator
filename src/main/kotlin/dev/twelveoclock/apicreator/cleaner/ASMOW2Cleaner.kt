@@ -34,6 +34,9 @@ object ASMOW2Cleaner : Cleaner {
 
 	class APIClassVisitor(api: Int, classWriter: ClassWriter, val options: Set<Cleaner.Option>) : ClassVisitor(api, classWriter) {
 
+		lateinit var kotlinMetadataVisitor: APIKotlinMetadataVisitor
+			private set
+
 		override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
 
 			if (descriptor == "Lkotlin/Metadata;") {
@@ -43,7 +46,8 @@ object ASMOW2Cleaner : Cleaner {
 					return null
 				}
 
-				return APIKotlinMetadataVisitor(api, options, super.visitAnnotation(descriptor, visible))
+				kotlinMetadataVisitor = APIKotlinMetadataVisitor(api, options, super.visitAnnotation(descriptor, visible))
+				return kotlinMetadataVisitor
 			}
 
 			return super.visitAnnotation(descriptor, visible)
