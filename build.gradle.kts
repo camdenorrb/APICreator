@@ -18,7 +18,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
 
     // Transformers
-    implementation("org.ow2.asm:asm:9.4")
+    implementation("org.ow2.asm:asm:9.5")
     implementation("com.guardsquare:proguard-core:9.0.7")
     implementation("net.bytebuddy:byte-buddy:1.12.23")
     implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.0")
