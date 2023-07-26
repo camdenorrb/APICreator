@@ -317,14 +317,14 @@ object ASMOW2Cleaner : Cleaner {
 				is KotlinClassMetadata.Class -> {
 					val kmClass = meta.toKmClass()
 					kmClass.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
-					writeKotlinMeta(KotlinClassMetadata.writeClass(kmClass).annotationData)
+					writeKotlinMeta(KotlinClassMetadata.writeClass(kmClass))
 				}
 				is KotlinClassMetadata.FileFacade -> {
 					val kmPackage = meta.toKmPackage()
 					kmPackage.functions.filter { Flag.Function.IS_INLINE(it.flags) }.forEach { it.flags = IS_INLINE.invert(it.flags) }
-					writeKotlinMeta(KotlinClassMetadata.writeFileFacade(kmPackage).annotationData)
+					writeKotlinMeta(KotlinClassMetadata.writeFileFacade(kmPackage))
 				}
-				else -> writeKotlinMeta(meta!!.annotationData) // TODO: Support other types
+				else -> writeKotlinMeta(header) // TODO: Support other types
 			}
 		}
 
