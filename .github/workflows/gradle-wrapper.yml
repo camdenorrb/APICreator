@@ -1,0 +1,44 @@
+name: Gradle wrapper update
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  gradle-wrapper:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: Update Gradle
+        id: gradleUpdate
+        uses: EdwarDDay/upgrade-gradle-action@v1
+        with:
+          gradle-distribution: "bin"
+
+      - name: Validation
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Pull request
+        uses: peter-evans/create-pull-request@v5
+        id: pullRequest
+        with:
+          commit-message: "Update gradle to ${{ steps.gradleUpdate.outputs.gradle-version }}"
+          branch: "gradle_update/version_${{ steps.gradleUpdate.outputs.gradle-version }}"
+          delete-branch: true
+          title: "Update gradle to ${{ steps.gradleUpdate.outputs.gradle-version }}"
+          body: |
+            ${{ steps.gradleUpdate.outputs.version-information }}
+
+            Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action
+          labels: "dependencies,gradle"
+      - name: Auto merge
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ steps.pullRequest.outputs.pull-request-url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
