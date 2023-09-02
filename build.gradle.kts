@@ -15,7 +15,7 @@ dependencies {
 
     // Kotlin
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
 
     // Transformers
     implementation("org.ow2.asm:asm:9.5")
