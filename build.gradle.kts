@@ -26,7 +26,7 @@ dependencies {
 
     // Testing
     testImplementation(kotlin("test-junit"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.5.0")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.6.0")
 }
 
 application {
