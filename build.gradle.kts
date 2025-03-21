@@ -20,7 +20,7 @@ dependencies {
     // Transformers
     implementation("org.ow2.asm:asm:9.7.1")
     implementation("com.guardsquare:proguard-core:9.1.7")
-    implementation("net.bytebuddy:byte-buddy:1.17.2")
+    implementation("net.bytebuddy:byte-buddy:1.17.3")
     implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.7.0")
 
 
